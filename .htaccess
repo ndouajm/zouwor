@@ -1,0 +1,19 @@
+# .htaccess - À placer dans le dossier racine
+
+# Protection du fichier JSON
+<Files "inscriptions.json">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Réécriture d'URL (optionnel)
+RewriteEngine On
+RewriteRule ^api/inscriptions$ save_inscription.php [L]
+
+# Cache
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 year"
+</IfModule>
