@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .modal-overlay { backdrop-filter: blur(4px); }
         .toast {
             position: fixed;
             bottom: 20px;
@@ -19,9 +18,41 @@
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #163365, #0f2450);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
+
+<!-- Écran de connexion -->
+<div id="loginOverlay" class="login-overlay">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+        <div class="text-center mb-6">
+            <span class="text-5xl mb-3 block">🔐</span>
+            <h2 class="text-2xl font-bold text-[#163365]">Administration Zouwor</h2>
+            <p class="text-gray-500 text-sm mt-2">Accès réservé aux administrateurs</p>
+        </div>
+        <form id="loginForm" onsubmit="checkPassword(event)">
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
+                <input type="password" id="passwordInput" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-[#163365] focus:outline-none focus:ring-2 focus:ring-[#163365]/20" placeholder="Entrez le mot de passe" autofocus>
+            </div>
+            <button type="submit" class="w-full bg-[#163365] text-white py-3 rounded-xl font-bold hover:bg-[#0f2450] transition">Se connecter →</button>
+            <p class="text-center text-xs text-gray-400 mt-4">Contactez l'administrateur pour obtenir le mot de passe</p>
+        </form>
+        <div id="loginError" class="hidden mt-3 text-center text-red-500 text-sm bg-red-50 py-2 rounded-lg">❌ Mot de passe incorrect</div>
+    </div>
+</div>
+
+<!-- Contenu principal (caché tant que non connecté) -->
+<div id="mainContent" style="display: none;">
 
 <!-- Navbar admin -->
 <nav class="bg-[#163365] text-white px-6 py-4 flex flex-wrap justify-between items-center gap-3 shadow-lg">
@@ -33,6 +64,7 @@
     <div class="flex gap-3 flex-wrap">
         <button onclick="exporterCSV()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">📥 Exporter CSV</button>
         <button onclick="rafraichir()" class="bg-[#F97316] hover:bg-orange-600 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">🔄 Rafraîchir</button>
+        <button onclick="deconnecter()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">🚪 Déconnexion</button>
         <a href="/" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition">← Retour site</a>
     </div>
 </nav>
@@ -77,7 +109,7 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="12" class="text-center py-8 text-gray-400">Chargement des données...</td></tr>
+                    <tr><td colspan="12" class="text-center py-8 text-gray-400">Chargement des données......</td></tr>
                 </tbody>
             </table>
         </div>
@@ -100,12 +132,61 @@
     <span>✓</span> <span id="toastMessage">Action réussie</span>
 </div>
 
+</div> <!-- Fin mainContent -->
+
 <script>
-    // Configuration - Utilisez le chemin correct vers votre fichier PHP
-    const API_URL = 'save_inscription.php';
+    // ═══════════════════════════════════════════════════════════
+    // CONFIGURATION - 
+    // ═══════════════════════════════════════════════════════════
+    const ADMIN_PASSWORD = 'Zouwor2025'; 
+    
+
+    // ═══════════════════════════════════════════════════════════
+    
+    const ADMIN_TOKEN = 'votreTokenSecret123';
+    const API_URL = `save_inscription.php?token=${ADMIN_TOKEN}`;
     let inscriptions = [];
 
-    // Afficher une notification temporaire
+    // ─── GESTION DE LA CONNEXION ───
+    function checkPassword(event) {
+        event.preventDefault();
+        const password = document.getElementById('passwordInput').value;
+        const loginError = document.getElementById('loginError');
+        
+        if (password === ADMIN_PASSWORD) {
+            // Connexion réussie
+            sessionStorage.setItem('admin_logged_in', 'true');
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            chargerInscriptions();
+        } else {
+            loginError.classList.remove('hidden');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+    
+    function deconnecter() {
+        sessionStorage.removeItem('admin_logged_in');
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('loginError').classList.add('hidden');
+    }
+    
+    // Vérifier si déjà connecté (session)
+    function verifierSession() {
+        if (sessionStorage.getItem('admin_logged_in') === 'true') {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            chargerInscriptions();
+        } else {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('mainContent').style.display = 'none';
+        }
+    }
+    
+    // ─── FONCTIONS PRINCIPALES ───
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
@@ -118,7 +199,6 @@
         }, 3000);
     }
 
-    // Charger toutes les inscriptions
     async function chargerInscriptions() {
         try {
             const response = await fetch(API_URL);
@@ -134,7 +214,6 @@
         }
     }
 
-    // Afficher le tableau avec filtres
     function afficherTableau() {
         const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
         const filterBudget = document.getElementById('filterBudget')?.value || '';
@@ -150,7 +229,6 @@
             return matchSearch && matchBudget && matchImport;
         });
         
-        // Trier par date décroissante (plus récent d'abord)
         filtrees.sort((a, b) => new Date(b.date) - new Date(a.date));
         
         if (filtrees.length === 0) {
@@ -179,7 +257,6 @@
         `).join('');
     }
     
-    // Échapper le HTML pour éviter les injections
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -190,14 +267,12 @@
         });
     }
     
-    // Formater la date
     function formatDate(dateStr) {
         if (!dateStr) return '-';
         const date = new Date(dateStr);
         return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
     
-    // Formater le budget
     function formaterBudget(budget) {
         const budgets = {
             '50-200k': '50k - 200k FCFA',
@@ -208,8 +283,7 @@
         return budgets[budget] || budget || '-';
     }
     
-    // Voir les détails d'une inscription
-    async function voirDetails(id) {
+    function voirDetails(id) {
         const ins = inscriptions.find(i => i.id == id);
         if (!ins) return;
         
@@ -241,15 +315,11 @@
         modal.style.display = 'none';
     }
     
-    // Supprimer une inscription
     async function supprimer(id) {
         if (!confirm('⚠️ Supprimer définitivement cette inscription ?')) return;
         
         try {
-            const response = await fetch(`${API_URL}?id=${id}&_method=DELETE`, { 
-                method: 'DELETE'
-            });
-            
+            const response = await fetch(`${API_URL}?id=${id}&_method=DELETE`, { method: 'DELETE' });
             if (response.ok) {
                 showToast('Inscription supprimée avec succès');
                 chargerInscriptions();
@@ -262,7 +332,6 @@
         }
     }
     
-    // Exporter en CSV
     function exporterCSV() {
         window.location.href = `${API_URL}?export=csv`;
     }
@@ -291,13 +360,15 @@
     if (filterBudget) filterBudget.addEventListener('change', afficherTableau);
     if (filterImport) filterImport.addEventListener('change', afficherTableau);
     
-    // Chargement initial
-    chargerInscriptions();
-    
-    // Rafraîchissement automatique toutes les 30 secondes
+    // Rafraîchissement automatique toutes les 30 secondes (si connecté)
     setInterval(() => {
-        chargerInscriptions();
+        if (sessionStorage.getItem('admin_logged_in') === 'true') {
+            chargerInscriptions();
+        }
     }, 30000);
+    
+    // Initialisation : vérifier la session
+    verifierSession();
 </script>
 </body>
 </html>

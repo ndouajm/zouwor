@@ -1,4 +1,13 @@
 <?php
+// En haut du fichier PHP
+$ADMIN_TOKEN = 'votreTokenSecret123';
+
+// Dans chaque route (GET, DELETE)
+if (!isset($_GET['token']) || $_GET['token'] !== $ADMIN_TOKEN) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Non autorisé']);
+    exit;
+}
 // save_inscription.php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -106,6 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     echo json_encode(['success' => true]);
     exit;
 }
+
+
 
 // Méthode non supportée
 http_response_code(405);
