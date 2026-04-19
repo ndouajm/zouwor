@@ -1,0 +1,24 @@
+{
+  "name": "zouwor-admin",
+  "version": "1.0.0",
+  "description": "Système d'administration Zouwor - Gestion des inscriptions import Chine → Côte d'Ivoire",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "import",
+    "export",
+    "chine",
+    "cote-d-ivoire",
+    "administration",
+    "formulaire"
+  ],
+  "author": "Zouwor",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.1"
+  }
+}

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/img/favicon.ico" type="image/x-icon">
+
+<title>Zouwor — Centrale d'Achat Chine → Côte d'Ivoire</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        navy: { DEFAULT: '#163365', dark: '#0f2450' },
+        brand: { DEFAULT: '#F97316', dark: '#ea6a0a' }
+      },
+      fontFamily: { sans: ['Segoe UI', 'Tahoma', 'Geneva', 'Verdana', 'sans-serif'] }
+    }
+  }
+}
+</script>
+<style>
+/* Minimal custom CSS for things Tailwind can't do inline */
+@keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+@keyframes waPulse { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(1.18);opacity:0} }
+@keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
+
+.anim-1{animation:fadeUp .6s ease both}
+.anim-2{animation:fadeUp .7s .1s ease both}
+.anim-3{animation:fadeUp .7s .2s ease both}
+.anim-4{animation:fadeUp .7s .3s ease both}
+
+.wa-pulse::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid rgba(37,211,102,.35);animation:waPulse 2.2s ease-in-out infinite}
+.wa-label{max-width:0;overflow:hidden;padding-left:0;padding-right:0;transition:max-width .4s ease,padding .4s ease}
+.wa-fab:hover .wa-label{max-width:180px;padding-left:10px;padding-right:14px}
+
+.hero-slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease;background-size:cover;background-position:center}
+.hero-slide.active{opacity:1;z-index:1}
+.hero-slide::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 0% 100%,rgba(0,0,0,.35) 0%,transparent 55%),radial-gradient(ellipse at 100% 0%,rgba(0,0,0,.15) 0%,transparent 45%)}
+
+.h-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);cursor:pointer;border:1.5px solid rgba(255,255,255,.5);transition:all .28s ease}
+.h-dot.active{background:#F97316;border-color:#F97316;height:26px;border-radius:4px}
+
+.svc-track{display:flex;gap:16px;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+
+/* Card base */
+.svc-card{
+  flex:0 0 calc(25% - 12px);
+  border-radius:14px;
+  border:1.5px solid #dce8f5;
+  padding:26px 22px;
+  position:relative;
+  overflow:hidden;
+  background:#fff;
+  cursor:default;
+  transition:border-color .35s ease, transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s ease;
+  isolation:isolate;
+}
+
+/* Orange fill layer — slides up from bottom */
+.svc-card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(145deg,#F97316 0%,#ea6a0a 60%,#c2550a 100%);
+  transform:translateY(100%);
+  transition:transform .42s cubic-bezier(.22,1,.36,1);
+  z-index:0;
+  border-radius:inherit;
+}
+
+/* Top accent bar */
+.svc-card::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,#163365,#F97316);
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform .35s ease;
+  z-index:2;
+}
+
+/* Hover state */
+.svc-card:hover{
+  border-color:transparent;
+  transform:translateY(-6px) scale(1.01);
+  box-shadow:0 18px 40px rgba(249,115,22,.35), 0 6px 14px rgba(249,115,22,.2);
+}
+.svc-card:hover::after{ transform:translateY(0); }
+.svc-card:hover::before{ transform:scaleX(1); }
+
+/* Active card (current slide) */
+.svc-card.sac::before{ transform:scaleX(1); }
+.svc-card.sac{ border-color:#c5d6f5; }
+
+/* All card children above the orange layer */
+.svc-card > *{ position:relative; z-index:1; transition:color .28s ease; }
+
+/* Icon box color change on hover */
+.svc-card:hover .svc-icon-box{
+  background:rgba(255,255,255,.2);
+}
+
+/* Text colors on hover */
+.svc-card:hover h3{ color:#fff !important; }
+.svc-card:hover p{ color:rgba(255,255,255,.88) !important; }
+.svc-card:hover .svc-tag{
+  background:rgba(255,255,255,.18) !important;
+  color:#fff !important;
+  border-color:rgba(255,255,255,.3) !important;
+}
+
+.sv-dot{width:6px;height:6px;border-radius:50%;background:#dce8f5;cursor:pointer;transition:all .28s ease}
+.sv-dot.active{background:#163365;width:20px;border-radius:3px}
+
+.step-row{display:flex;gap:14px;align-items:flex-start;padding-bottom:24px;position:relative}
+.step-row:not(:last-child)::after{content:'';position:absolute;left:18px;top:40px;bottom:0;width:1.5px;background:linear-gradient(to bottom,#c5d6f5,transparent)}
+
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* Mobile nav slide-in */
+.mob-nav{position:fixed;top:0;right:0;bottom:0;width:82%;max-width:340px;background:#fff;z-index:1000;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(0,0,0,.15);overflow-y:auto}
+.mob-nav.open{transform:translateX(0)}
+.mob-overlay{position:fixed;inset:0;background:rgba(0,18,38,.5);z-index:999;opacity:0;pointer-events:none;transition:opacity .3s ease}
+.mob-overlay.open{opacity:1;pointer-events:all}
+
+/* Nav always visible text */
+.nav-link-text{
+  color:rgba(255,255,255,.95);
+  text-shadow:0 1px 6px rgba(0,0,0,.5),0 0 20px rgba(0,0,0,.3)
+}
+.navbar.scrolled .nav-link-text{color:#000000;text-shadow:none}
+
+/* Scrollbar */
+.modal-box::-webkit-scrollbar{width:5px}
+.modal-box::-webkit-scrollbar-track{background:#f0f4f8}
+.modal-box::-webkit-scrollbar-thumb{background:#163365;border-radius:3px}
+
+@media(max-width:1024px){.svc-card{flex:0 0 calc(50% - 8px)}}
+@media(max-width:768px){.svc-card{flex:0 0 100%}}
+</style>
+</head>
+<body class="font-sans text-sm text-gray-600 bg-white overflow-x-hidden leading-relaxed">
+
+<!-- ═══ NAVBAR ═══ -->
+  <nav class="fixed top-0 left-0 right-0 z-[900] h-[68px] flex items-center justify-between px-[5%] transition-all duration-300" id="navbar" style="background:transparent">
+      <a href="#" class="flex items-center gap-2 no-underline min-w-[110px]">
+        <img src="/img/logo.png" alt="Logo" class="w-100 h-20">
+        <!-- <span class="font-bold text-xl tracking-tight text-white" id="logo-txt" style="text-shadow:0 1px 8px rgba(0,0,0,.4)">Zou<span class="text-orange-500">wor</span></span> -->
+      </a>
+
+      <!-- Desktop links -->
+      <ul class="hidden md:flex gap-8 list-none items-center">
+        <li><a href="#" class="nav-link-text no-underline text-sm font-medium hover:text-white transition-colors relative group">Accueil<span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300 group-hover:w-full rounded-sm"></span></a></li>
+        <li><a href="#services" class="nav-link-text no-underline text-sm font-medium hover:text-white transition-colors relative group">Services<span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300 group-hover:w-full rounded-sm"></span></a></li>
+        <li><a href="#contact" class="nav-link-text no-underline text-sm font-medium hover:text-white transition-colors relative group">Contact<span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300 group-hover:w-full rounded-sm"></span></a></li>
+      </ul>
+
+      <button class="hidden md:inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-md text-xs font-bold cursor-pointer border-none transition-all duration-300 shadow-lg shadow-orange-500/40 hover:shadow-orange-500/60 hover:-translate-y-0.5 whitespace-nowrap" onclick="openModal()">Rejoignez-nous →</button>
+
+      <button class="md:hidden flex flex-col gap-1.5 cursor-pointer bg-none border-none p-1" id="hamBtn" onclick="toggleMenu()">
+        <span class="block w-6 h-0.5 rounded-sm transition-colors" style="background:rgba(255,255,255,.95);filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))" id="h1"></span>
+        <span class="block w-6 h-0.5 rounded-sm transition-colors" style="background:rgba(255,255,255,.95);filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))" id="h2"></span>
+        <span class="block w-6 h-0.5 rounded-sm transition-colors" style="background:rgba(255,255,255,.95);filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))" id="h3"></span>
+      </button>
+  </nav>
+
+<!-- Mobile overlay -->
+<div class="mob-overlay" id="mobOverlay" onclick="closeMenu()"></div>
+
+<!-- Mobile nav panel -->
+<div class="mob-nav" id="mobNav">
+  <div class="flex items-center justify-between px-2 py-4 border-b border-gray-100">
+    <!-- Logo -->
+    <img src="/img/logo.png" alt="Logo" class="w-100 h-20">
+    <!-- <span class="font-bold text-xl text-gray-900">Zou<span class="text-orange-500">wor</span></span> -->
+    <button onclick="closeMenu()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors text-lg border-none cursor-pointer">×</button>
+  </div>
+
+  <!-- Nav links -->
+  <div class="px-5 py-4 border-b border-gray-100">
+    <p class="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">Navigation</p>
+    <div class="flex flex-col gap-1">
+      <a href="#" onclick="closeMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 font-medium text-sm hover:bg-orange-50 hover:text-orange-600 transition-colors no-underline" >🏠 Accueil</a>
+      <a href="#services" onclick="closeMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 font-medium text-sm hover:bg-orange-50 hover:text-orange-600 transition-colors no-underline">📦 Services</a>
+      <a href="#contact" onclick="closeMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 font-medium text-sm hover:bg-orange-50 hover:text-orange-600 transition-colors no-underline">📞 Contact</a>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="px-5 py-4 border-b border-gray-100">
+    <button onclick="openModal();closeMenu();" class="w-full bg-gradient-to-r from-navy to-orange-500 text-white py-3 rounded-lg font-bold text-sm cursor-pointer border-none shadow-lg hover:opacity-90 transition-opacity">🛍️ Rejoindre Zouwor →</button>
+  </div>
+
+  <!-- Contact info -->
+  <div class="px-5 py-4 border-b border-gray-100">
+    <p class="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">Nous contacter</p>
+    <div class="flex flex-col gap-2">
+      <a href="tel:+22500000000" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 text-navy text-sm font-medium no-underline hover:bg-blue-100 transition-colors">
+        <span class="text-base">📞</span><div><div class="text-xs text-gray-400">Téléphone</div>+225 XX XX XX XX XX</div>
+      </a>
+      <a href="mailto:contact@zouwor.com" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-orange-50 text-gray-700 text-sm font-medium no-underline hover:bg-orange-100 transition-colors">
+        <span class="text-base">📧</span><div><div class="text-xs text-gray-400">Email</div>contact@zouwor.com</div>
+      </a>
+      <div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50 text-gray-700 text-sm">
+        <span class="text-base">🕒</span><div><div class="text-xs text-gray-400">Horaires</div>Lun–Sam, 08h00 – 18h00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Social -->
+  <div class="px-5 py-4">
+    <p class="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">Réseaux sociaux</p>
+    <div class="flex gap-2 flex-wrap">
+      <a href="https://chat.whatsapp.com/GfNhdBTDh6A4a1sF5ufGmC" class="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center no-underline hover:bg-green-500 hover:border-green-500 transition-all group">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 fill-green-500 group-hover:fill-white transition-colors"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </a>
+      <a href="#" class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center no-underline hover:bg-blue-600 hover:border-blue-600 transition-all group">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 fill-blue-600 group-hover:fill-white transition-colors"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </a>
+      <a href="#" class="w-10 h-10 rounded-xl bg-pink-50 border border-pink-200 flex items-center justify-center no-underline hover:bg-pink-500 hover:border-pink-500 transition-all group">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 group-hover:fill-white transition-colors" style="fill:#E4405F"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      </a>
+      <a href="#" class="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center no-underline hover:bg-black hover:border-black transition-all group">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 fill-gray-800 group-hover:fill-white transition-colors"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+      </a>
+      <a href="#" class="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center no-underline hover:bg-red-600 hover:border-red-600 transition-all group">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 fill-red-600 group-hover:fill-white transition-colors"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+      </a>
+    </div>
+    <a href="https://wa.me/22500000000" target="_blank" class="mt-3 flex items-center gap-2 bg-green-500 text-white py-2.5 px-4 rounded-lg font-bold text-sm no-underline hover:bg-green-600 transition-colors">
+      <svg viewBox="0 0 24 24" class="w-5 h-5 fill-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      WhatsApp direct
+    </a>
+  </div>
+</div>
+
+<!-- ═══ HERO ═══ -->
+<header class="relative h-screen min-h-[560px] overflow-hidden" id="accueil">
+  <div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1920&q=85')"></div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&w=1920&q=85')"></div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1566647302664-9d4d06c64b98?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')"></div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=85')"></div>
+
+  <div class="absolute inset-0 z-10 flex flex-col justify-center items-start px-[6%] ">
+    <div class="anim-1" style="background:rgba(22,51,101,.75);backdrop-filter:blur(2px);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:36px 40px 32px;max-width:580px;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+      <div class="anim-1 inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full text-orange-200 text-xs font-bold tracking-widest uppercase" style="background:rgba(249,115,22,.18);border:1px solid rgba(249,115,22,.45)">🇨🇳 Chine → 🇨🇮 Côte d'Ivoire</div>
+      <h1 class="anim-2 text-white font-bold leading-tight mb-3" style="font-size:clamp(1.75rem,3.8vw,2.9rem);letter-spacing:-.4px">Moins de risques,<br><span class="text-orange-400">plus de profits.</span></h1>
+      <p class="anim-3 text-white/85 text-sm leading-7 mb-7">Zouwor vous met en relation avec les meilleurs fournisseurs et gère toute la logistique de transport et de livraison jusqu'à votre porte en Côte d'Ivoire.</p>
+      <div class="anim-4 flex gap-3 flex-wrap">
+        <button onclick="downloadCatalogue()" class="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-7 py-3 rounded-md text-xs font-bold border-none cursor-pointer transition-all shadow-lg shadow-orange-500/40 hover:shadow-orange-500/60 hover:-translate-y-0.5">Télécharger notre Catalogue &#128210;</button>
+        
+      </div>
+    </div>
+  </div>
+
+  <div class="absolute right-[3%] top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2" id="heroDots"></div>
+  <button class="hidden md:flex absolute left-[2%] top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full items-center justify-center text-white border-none cursor-pointer transition-all hover:bg-orange-500" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35)" onclick="heroSlide(-1)">←</button>
+  <button class="hidden md:flex absolute right-[2%] top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full items-center justify-center text-white border-none cursor-pointer transition-all hover:bg-orange-500" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35)" onclick="heroSlide(1)">→</button>
+
+  <div class="absolute bottom-0 left-0 right-0 z-10 flex items-stretch justify-center  border-t border-gray-200 flex-wrap" style="background-color: #0f2450a5;">
+    <div class="flex flex-col items-center px-10 py-3.5 border-r border-gray-200 gap-0.5 flex-1 min-w-[45%] md:min-w-0 md:flex-none"><span class="text-lg font-bold text-navy text-white">500<span class="text-orange-500">+</span></span><span class="text-[11px] text-gray-400 text-center">Membres actifs</span></div>
+    <div class="flex flex-col items-center px-10 py-3.5 border-r border-gray-200 gap-0.5 flex-1 min-w-[45%] md:min-w-0 md:flex-none"><span class="text-lg font-bold text-navy text-white">5 ⭐</span><span class="text-[11px] text-gray-400">Satisfaction client</span></div>
+    <div class="flex flex-col items-center px-10 py-3.5 border-r border-gray-200 gap-0.5 flex-1 min-w-[45%] md:min-w-0 md:flex-none"><span class="text-lg font-bold text-navy text-white">12<span class="text-sm">h</span></span><span class="text-[11px] text-gray-400">Délai de réponse</span></div>
+    <div class="flex flex-col items-center px-10 py-3.5 gap-0.5 flex-1 min-w-[45%] md:min-w-0 md:flex-none"><span class="text-lg font-bold text-navy text-white">100<span class="text-orange-500">%</span></span><span class="text-[11px] text-gray-400">Dédouanement géré</span></div>
+  </div>
+</header>
+
+<!-- ═══ PROOF BAR ═══ -->
+<div class="bg-navy py-3 px-[5%] flex items-center justify-center gap-8 flex-wrap">
+  <div class="flex items-center gap-2 text-white/90 text-xs font-medium">🛡️ Sécurisé &amp; Assuré</div>
+  <div class="w-1 h-1 rounded-full bg-orange-500 opacity-60"></div>
+  <div class="flex items-center gap-2 text-white/90 text-xs font-medium">📦 Suivi temps réel</div>
+  <div class="w-1 h-1 rounded-full bg-orange-500 opacity-60 hidden sm:block"></div>
+  <div class="hidden sm:flex items-center gap-2 text-white/90 text-xs font-medium">💳 Paiement flexible</div>
+  <div class="w-1 h-1 rounded-full bg-orange-500 opacity-60 hidden sm:block"></div>
+  <div class="hidden sm:flex items-center gap-2 text-white/90 text-xs font-medium">🤝 Fournisseurs vérifiés</div>
+  <div class="w-1 h-1 rounded-full bg-orange-500 opacity-60 hidden md:block"></div>
+  <div class="hidden md:flex items-center gap-2 text-white/90 text-xs font-medium">📱 Support WhatsApp 6j/7</div>
+</div>
+
+<!-- ═══ SERVICES ═══ -->
+<section class="py-16 px-[5%]" id="services">
+  <div class="sec-head reveal mb-9">
+    <span class="inline-block text-orange-500 text-[11px] font-bold tracking-[2px] uppercase mb-1.5">Nos services</span>
+    <h2 class="font-bold text-gray-900 leading-tight mb-2" style="font-size:clamp(1.25rem,2.4vw,1.9rem)">Tout votre import géré,<br><span class="text-navy">de A à Z.</span></h2>
+    <p class="text-gray-400 text-xs max-w-sm leading-7">De la recherche du fournisseur jusqu'à votre porte, Zouwor prend en charge chaque étape.</p>
+  </div>
+  <div class="overflow-hidden reveal" id="svcOuter">
+    <div class="svc-track" id="svcTrack">
+      <div class="svc-card" data-svc>
+        <div class="svc-icon-box w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-xl mb-3.5 transition-all duration-300">🔍</div>
+        <h3 class="text-xs font-bold text-gray-900 mb-2 leading-snug">Sourcing &amp; Négociation</h3>
+        <p class="text-[11px] text-gray-400 leading-6">Identification des meilleurs fournisseurs chinois, vérification qualité et négociation des prix les plus compétitifs pour vous.</p>
+        <span class="svc-tag inline-block mt-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-100 transition-all duration-300">Chine</span>
+      </div>
+      <div class="svc-card" data-svc>
+        <div class="svc-icon-box w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-xl mb-3.5 transition-all duration-300">🚢</div>
+        <h3 class="text-xs font-bold text-gray-900 mb-2 leading-snug">Fret Maritime &amp; Aérien</h3>
+        <p class="text-[11px] text-gray-400 leading-6">Solutions flexibles — conteneur FCL, groupage LCL ou fret aérien express selon vos délais et budget.</p>
+        <span class="svc-tag inline-block mt-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-100 transition-all duration-300">Transport</span>
+      </div>
+      <div class="svc-card" data-svc>
+        <div class="svc-icon-box w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-xl mb-3.5 transition-all duration-300">📑</div>
+        <h3 class="text-xs font-bold text-gray-900 mb-2 leading-snug">Dédouanement Abidjan</h3>
+        <p class="text-[11px] text-gray-400 leading-6">Prise en charge complète des formalités douanières au port d'Abidjan. Zéro blocage, livraison fluide.</p>
+        <span class="svc-tag inline-block mt-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-100 transition-all duration-300">Douane</span>
+      </div>
+      <div class="svc-card" data-svc>
+        <div class="svc-icon-box w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-xl mb-3.5 transition-all duration-300">📦</div>
+        <h3 class="text-xs font-bold text-gray-900 mb-2 leading-snug">Entreposage Sécurisé</h3>
+        <p class="text-[11px] text-gray-400 leading-6">Entrepôts sécurisés en Chine avant expédition et à Abidjan avant livraison. Vos stocks en sécurité.</p>
+        <span class="svc-tag inline-block mt-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-100 transition-all duration-300">Stockage</span>
+      </div>
+      <div class="svc-card" data-svc>
+        <div class="svc-icon-box w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-xl mb-3.5 transition-all duration-300">🚚</div>
+        <h3 class="text-xs font-bold text-gray-900 mb-2 leading-snug">Livraison Porte-à-Porte</h3>
+        <p class="text-[11px] text-gray-400 leading-6">Acheminement depuis le port d'Abidjan jusqu'à votre boutique ou domicile, partout en Côte d'Ivoire.</p>
+        <span class="svc-tag inline-block mt-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-100 transition-all duration-300">Livraison CI</span>
+      </div>
+      <div class="svc-card" data-svc>
+        <div class="svc-icon-box w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-xl mb-3.5 transition-all duration-300">💬</div>
+        <h3 class="text-xs font-bold text-gray-900 mb-2 leading-snug">Accompagnement WhatsApp</h3>
+        <p class="text-[11px] text-gray-400 leading-6">Suivi personnalisé en français à chaque étape de votre commande. Un expert dédié vous répond rapidement.</p>
+        <span class="svc-tag inline-block mt-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-100 transition-all duration-300">Support</span>
+      </div>
+    </div>
+  </div>
+  <div class="flex items-center justify-between mt-6 reveal">
+    <div class="flex gap-1.5" id="svcDots"></div>
+    <div class="flex gap-2">
+      <button onclick="svcPrev()" class="w-9 h-9 rounded-lg flex items-center justify-center text-navy text-sm cursor-pointer transition-all hover:bg-navy hover:text-white" style="border:1.5px solid #dce8f5;background:#fff">←</button>
+      <button onclick="svcNext()" class="w-9 h-9 rounded-lg flex items-center justify-center text-navy text-sm cursor-pointer transition-all hover:bg-navy hover:text-white" style="border:1.5px solid #dce8f5;background:#fff">→</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS + OFFER ═══ -->
+<section class="py-16 px-[5%] bg-[#f7fbfe]">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
+    <div class="reveal">
+      <span class="inline-block text-orange-500 text-[11px] font-bold tracking-[2px] uppercase mb-1.5">Comment ça marche</span>
+      <h2 class="font-bold text-gray-900 leading-tight mb-2" style="font-size:clamp(1.25rem,2.4vw,1.9rem)">Votre importation<br><span class="text-navy">en 4 étapes</span></h2>
+      <p class="text-gray-400 text-xs leading-7 mb-7">Pas besoin d'expérience. Nous vous guidons de A à Z.</p>
+      <div class="flex flex-col">
+        <div class="step-row"><div class="w-[38px] h-[38px] rounded-full bg-blue-50 flex-shrink-0 flex items-center justify-center font-bold text-xs text-navy border-2 border-blue-200 transition-all hover:bg-navy hover:text-white hover:border-navy">1</div><div><h4 class="text-xs font-bold text-gray-900 mb-0.5">Rejoignez la communauté</h4><p class="text-[11px] text-gray-400 leading-6">Inscrivez-vous gratuitement. Accès immédiat aux offres d'importation groupée.</p></div></div>
+        <div class="step-row"><div class="w-[38px] h-[38px] rounded-full bg-blue-50 flex-shrink-0 flex items-center justify-center font-bold text-xs text-navy border-2 border-blue-200 transition-all hover:bg-navy hover:text-white hover:border-navy">2</div><div><h4 class="text-xs font-bold text-gray-900 mb-0.5">Choisissez vos produits</h4><p class="text-[11px] text-gray-400 leading-6">Parcourez notre catalogue ou dites-nous ce que vous voulez. Nos experts sourcent pour vous.</p></div></div>
+        <div class="step-row"><div class="w-[38px] h-[38px] rounded-full bg-blue-50 flex-shrink-0 flex items-center justify-center font-bold text-xs text-navy border-2 border-blue-200 transition-all hover:bg-navy hover:text-white hover:border-navy">3</div><div><h4 class="text-xs font-bold text-gray-900 mb-0.5">Nous gérons tout</h4><p class="text-[11px] text-gray-400 leading-6">Achat, expédition, douane, livraison. Suivi en temps réel via WhatsApp.</p></div></div>
+        <div class="step-row"><div class="w-[38px] h-[38px] rounded-full bg-blue-50 flex-shrink-0 flex items-center justify-center font-bold text-xs text-navy border-2 border-blue-200 transition-all hover:bg-navy hover:text-white hover:border-navy">4</div><div><h4 class="text-xs font-bold text-gray-900 mb-0.5">Vendez &amp; prospérez</h4><p class="text-[11px] text-gray-400 leading-6">Réceptionnez vos marchandises, vendez et réinvestissez. Votre commerce grandit.</p></div></div>
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="bg-white rounded-2xl p-7 shadow-lg shadow-navy/5 relative overflow-hidden" style="border:1.5px solid #dce8f5">
+        <div class="absolute top-0 left-0 right-0 h-0.5" style="background:linear-gradient(90deg,#163365,#F97316)"></div>
+        <span class="inline-block bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase mb-3 border border-orange-100">🎁 Offre de bienvenue</span>
+        <h3 class="text-base font-bold text-gray-900 mb-2 leading-snug">Première importation ?<br>On vous accompagne.</h3>
+        <p class="text-xs text-gray-400 leading-7 mb-5">Rejoignez Zouwor et bénéficiez d'un accompagnement personnalisé pour votre première commande, quel que soit votre budget.</p>
+        <div class="flex flex-col gap-2.5 mb-5">
+          <div class="flex items-start gap-2.5 text-xs"><div class="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-[9px] font-black flex-shrink-0 mt-0.5">✓</div><span class="text-gray-600"><strong class="text-gray-900">Consultation gratuite</strong> avec un expert import</span></div>
+          <div class="flex items-start gap-2.5 text-xs"><div class="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-[9px] font-black flex-shrink-0 mt-0.5">✓</div><span class="text-gray-600"><strong class="text-gray-900">Suivi WhatsApp</strong> dédié en français</span></div>
+          <div class="flex items-start gap-2.5 text-xs"><div class="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-[9px] font-black flex-shrink-0 mt-0.5">✓</div><span class="text-gray-600"><strong class="text-gray-900">Groupements d'achat</strong> pour réduire vos coûts</span></div>
+          <div class="flex items-start gap-2.5 text-xs"><div class="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-[9px] font-black flex-shrink-0 mt-0.5">✓</div><span class="text-gray-600">Budgets dès <strong class="text-gray-900">50 000 FCFA</strong> acceptés</span></div>
+          <div class="flex items-start gap-2.5 text-xs"><div class="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-[9px] font-black flex-shrink-0 mt-0.5">✓</div><span class="text-gray-600">Accès aux <strong class="text-gray-900">meilleures offres</strong> en avant-première</span></div>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-red-600 font-semibold mb-4 bg-red-50 px-3 py-2 rounded-lg border-l-2 border-red-400">🔥 Places limitées — inscription gratuite, sans engagement</div>
+        <button onclick="openModal()" class="w-full py-3 rounded-lg font-bold text-sm text-white border-none cursor-pointer transition-all hover:opacity-90 hover:-translate-y-0.5" style="background:linear-gradient(90deg,#163365,#F97316)">Je rejoins Zouwor maintenant →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TESTIMONIALS ═══ -->
+<section class="py-16 px-[5%]">
+  <div class="text-center mb-9 reveal">
+    <span class="inline-block text-orange-500 text-[11px] font-bold tracking-[2px] uppercase mb-1.5">Témoignages</span>
+    <h2 class="font-bold text-gray-900 leading-tight" style="font-size:clamp(1.25rem,2.4vw,1.9rem)">Ils font confiance à <span class="text-navy">Zouwor</span></h2>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 reveal">
+    <div class="bg-white rounded-xl p-6 border border-gray-100 hover:border-navy/40 hover:shadow-lg hover:shadow-navy/8 hover:-translate-y-1 transition-all">
+      <div class="text-amber-400 text-xs tracking-widest mb-2.5">★★★★★</div>
+      <q class="block text-xs leading-7 text-gray-600 italic mb-4" style="quotes:'\201C' '\201D'">Grâce à Zouwor, j'ai pu importer mes premiers téléphones depuis la Chine sans rien connaître au commerce international. Tout a été géré pour moi.</q>
+      <div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0" style="background:linear-gradient(135deg,#163365,#F97316)">AK</div><div><div class="text-xs font-bold text-gray-900">Adjoua Kouamé</div><div class="text-[10px] text-gray-400">Commerçante, Yopougon</div></div></div>
+    </div>
+    <div class="bg-white rounded-xl p-6 border border-gray-100 hover:border-navy/40 hover:shadow-lg hover:shadow-navy/8 hover:-translate-y-1 transition-all">
+      <div class="text-amber-400 text-xs tracking-widest mb-2.5">★★★★★</div>
+      <q class="block text-xs leading-7 text-gray-600 italic mb-4" style="quotes:'\201C' '\201D'">Le suivi WhatsApp est vraiment excellent. Je savais exactement où était ma marchandise à chaque étape. Je recommande fortement.</q>
+      <div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0" style="background:linear-gradient(135deg,#163365,#F97316)">BT</div><div><div class="text-xs font-bold text-gray-900">Boubacar Traoré</div><div class="text-[10px] text-gray-400">Importateur, Bouaké</div></div></div>
+    </div>
+    <div class="bg-white rounded-xl p-6 border border-gray-100 hover:border-navy/40 hover:shadow-lg hover:shadow-navy/8 hover:-translate-y-1 transition-all">
+      <div class="text-amber-400 text-xs tracking-widest mb-2.5">★★★★★</div>
+      <q class="block text-xs leading-7 text-gray-600 italic mb-4" style="quotes:'\201C' '\201D'">J'avais peur du dédouanement, mais l'équipe a tout géré. En 3 semaines, mes produits étaient dans mon magasin à Cocody.</q>
+      <div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0" style="background:linear-gradient(135deg,#163365,#F97316)">MD</div><div><div class="text-xs font-bold text-gray-900">Marie-Claire Diallo</div><div class="text-[10px] text-gray-400">Boutique mode, Cocody</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ═══ -->
+<section class="py-16 px-[5%] bg-[#f7fbfe]" id="contact">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
+    <div class="reveal">
+      <span class="inline-block text-orange-500 text-[11px] font-bold tracking-[2px] uppercase mb-1.5">Nous contacter</span>
+      <h2 class="font-bold text-gray-900 leading-tight mb-2" style="font-size:clamp(1.25rem,2.4vw,1.9rem)">Parlons de votre <span class="text-navy">projet</span></h2>
+      <p class="text-gray-400 text-xs leading-7 mb-5">Notre équipe répond en moins de 48h. Contactez-nous sur WhatsApp pour une réponse rapide.</p>
+      <div class="flex flex-col gap-2 mb-6">
+        <a href="tel:+22500000000" class="flex items-center gap-3 bg-white rounded-xl p-3 no-underline text-gray-600 hover:text-navy hover:bg-blue-50 hover:border-navy/30 transition-all hover:translate-x-1" style="border:1.5px solid #dce8f5"><div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-base flex-shrink-0">📞</div><div><div class="text-[10px] text-gray-400">Téléphone</div><div class="text-xs font-semibold text-gray-900">+225 XX XX XX XX XX</div></div></a>
+        <a href="mailto:contact@zouwor.com" class="flex items-center gap-3 bg-white rounded-xl p-3 no-underline text-gray-600 hover:text-navy hover:bg-blue-50 hover:border-navy/30 transition-all hover:translate-x-1" style="border:1.5px solid #dce8f5"><div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-base flex-shrink-0">📧</div><div><div class="text-[10px] text-gray-400">Email</div><div class="text-xs font-semibold text-gray-900">contact@zouwor.com</div></div></a>
+        <div class="flex items-center gap-3 bg-white rounded-xl p-3" style="border:1.5px solid #dce8f5"><div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-base flex-shrink-0">📍</div><div><div class="text-[10px] text-gray-400">Adresse</div><div class="text-xs font-semibold text-gray-900">Abidjan, Côte d'Ivoire</div></div></div>
+        <div class="flex items-center gap-3 bg-white rounded-xl p-3" style="border:1.5px solid #dce8f5"><div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-base flex-shrink-0">🕒</div><div><div class="text-[10px] text-gray-400">Horaires</div><div class="text-xs font-semibold text-gray-900">Lun–Sam, 08h00 – 18h00</div></div></div>
+      </div>
+      <p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-3">Suivez-nous</p>
+      <div class="flex gap-2">
+        <a href="#" class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-green-500 hover:text-white transition-all no-underline"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
+        <a href="#" class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-blue-600 hover:text-white transition-all no-underline"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+        <a href="#" class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-pink-500 hover:text-white transition-all no-underline"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+        <a href="#" class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all no-underline"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+        <a href="#" class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-red-600 hover:text-white transition-all no-underline"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="bg-white rounded-2xl p-7 shadow-lg shadow-navy/5" style="border:1.5px solid #dce8f5">
+        <h3 class="text-sm font-bold text-gray-900 mb-2">📩 Restez informé des meilleures offres</h3>
+        <p class="text-xs text-gray-400 leading-7 mb-4">Recevez en avant-première nos offres d'importation groupée, les tendances produits depuis la Chine et nos conseils exclusifs.</p>
+        <div class="flex flex-col gap-1.5 mb-4">
+          <div class="flex items-center gap-2 text-xs text-gray-600 before:content-['✓'] before:text-orange-500 before:font-bold before:text-[11px]">Accès aux groupements d'achat à prix réduit</div>
+          <div class="flex items-center gap-2 text-xs text-gray-600 before:content-['✓'] before:text-orange-500 before:font-bold before:text-[11px]">Alertes tendances produits du marché</div>
+          <div class="flex items-center gap-2 text-xs text-gray-600 before:content-['✓'] before:text-orange-500 before:font-bold before:text-[11px]">Conseils pour développer votre activité</div>
+          <div class="flex items-center gap-2 text-xs text-gray-600 before:content-['✓'] before:text-orange-500 before:font-bold before:text-[11px]">Désinscription libre à tout moment</div>
+        </div>
+        <form class="flex flex-col gap-2.5" onsubmit="handleNl(event)">
+          <input class="w-full px-3 py-2.5 rounded-lg text-xs bg-gray-50 text-gray-900 outline-none transition-all focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10 placeholder-gray-300" style="border:1.5px solid #dce8f5" type="text" placeholder="Votre prénom" required>
+          <input class="w-full px-3 py-2.5 rounded-lg text-xs bg-gray-50 text-gray-900 outline-none transition-all focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10 placeholder-gray-300" style="border:1.5px solid #dce8f5" type="email" placeholder="Votre adresse email" required>
+          <input class="w-full px-3 py-2.5 rounded-lg text-xs bg-gray-50 text-gray-900 outline-none transition-all focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10 placeholder-gray-300" style="border:1.5px solid #dce8f5" type="tel" placeholder="WhatsApp (optionnel)">
+          <button type="submit" class="w-full py-3 rounded-lg font-bold text-sm text-white border-none cursor-pointer transition-all hover:opacity-90 bg-orange-500 hover:bg-orange-600">Recevoir les offres gratuitement →</button>
+        </form>
+        <p class="text-center text-[11px] text-gray-400 mt-2">🔒 Données protégées. Sans spam.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="bg-[#0d1b2a] text-white/70 py-12 px-[5%] pb-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-10 pb-8 border-b border-white/5">
+    <div>
+      <a href="#" class="text-xl font-bold text-white no-underline inline-block mb-3">
+        <img src="/img/logo.png" alt="Logo" class="w-100 h-20">
+        <!-- Zou<span class="text-orange-500">wor</span> -->
+      </a>
+      <p class="text-xs leading-7 mb-4 max-w-[240px]">Votre centrale d'achat pour importer depuis la Chine vers la Côte d'Ivoire. Sourcing, transport, dédouanement et livraison gérés de A à Z.</p>
+      <div class="flex gap-2">
+        <a href="https://chat.whatsapp.com/GfNhdBTDh6A4a1sF5ufGmC" class="w-9 h-9 rounded-lg flex items-center justify-center text-white/60 hover:bg-green-500 hover:text-white transition-all no-underline" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
+        <a href="#" class="w-9 h-9 rounded-lg flex items-center justify-center text-white/60 hover:bg-blue-600 hover:text-white transition-all no-underline" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+        <a href="#" class="w-9 h-9 rounded-lg flex items-center justify-center text-white/60 hover:bg-pink-500 hover:text-white transition-all no-underline" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+        <a href="#" class="w-9 h-9 rounded-lg flex items-center justify-center text-white/60 hover:bg-red-600 hover:text-white transition-all no-underline" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)"><svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      </div>
+    </div>
+    <div>
+      <h4 class="text-[11px] font-bold text-white uppercase tracking-wider mb-3">Services</h4>
+      <ul class="list-none flex flex-col gap-2">
+        <li><a href="#services" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Sourcing en Chine</a></li>
+        <li><a href="#services" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Fret Maritime &amp; Aérien</a></li>
+        <li><a href="#services" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Dédouanement</a></li>
+        <li><a href="#services" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Entreposage</a></li>
+        <li><a href="#services" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Livraison Locale</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="text-[11px] font-bold text-white uppercase tracking-wider mb-3">Liens rapides</h4>
+      <ul class="list-none flex flex-col gap-2">
+        <li><a href="#" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Accueil</a></li>
+        <li><a href="#services" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Nos services</a></li>
+        <li><a href="#contact" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Contact</a></li>
+        <li><a href="#" onclick="openModal();return false;" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">Rejoindre Zouwor</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="text-[11px] font-bold text-white uppercase tracking-wider mb-3">Contact</h4>
+      <ul class="list-none flex flex-col gap-2">
+        <li><a href="#" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">📍 Abidjan, Côte d'Ivoire</a></li>
+        <li><a href="tel:+22500000000" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">📞 +225 XX XX XX XX</a></li>
+        <li><a href="mailto:contact@zouwor.com" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">📧 contact@zouwor.com</a></li>
+        <li><a href="#" class="text-xs text-white/55 no-underline hover:text-white transition-colors flex items-center gap-1.5 before:content-['›'] before:text-orange-500 before:font-bold">🕒 Lun–Sam 08h–18h</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="flex flex-col md:flex-row justify-between items-center gap-3 text-center">
+    <p class="text-[11px] text-white/30">© 2026 Zouwor. Tous droits réservés. Import–Export Chine–Côte d'Ivoire.</p>
+  </div>
+</footer>
+
+<!-- ═══ SCROLL TOP ═══ -->
+<button id="stBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-[88px] right-6 w-10 h-10 bg-navy rounded-lg text-white border-none cursor-pointer z-[500] items-center justify-center text-sm shadow-lg shadow-navy/30 hover:bg-navy-dark hover:-translate-y-1 transition-all hidden">↑</button>
+
+<!-- ═══ WHATSAPP FAB ═══ -->
+<a href="https://chat.whatsapp.com/GfNhdBTDh6A4a1sF5ufGmC" target="_blank" class="wa-fab fixed bottom-6 right-6 z-[800] flex items-center cursor-pointer no-underline" style="filter:drop-shadow(0 4px 14px rgba(37,211,102,.45))" title="Rejoindre notre communauté WhatsApp">
+  <div class="wa-pulse relative w-14 h-14 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+    <svg viewBox="0 0 24 24" class="w-7 h-7 fill-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  </div>
+  <div class="wa-label bg-green-500 text-white text-xs font-bold h-9 flex items-center rounded-r-2xl -ml-2 whitespace-nowrap">Rejoindre la communauté</div>
+</a>
+
+<!-- ═══ MODAL ═══ -->
+<div  class="modal-overlay fixed inset-0 bg-[rgba(0,18,38,.75)] flex items-center justify-center z-[9999] p-5 opacity-0 transition-opacity duration-300 hidden" id="modal" style="backdrop-filter:blur(6px)">
+  <div class="modal-box bg-white rounded-2xl w-full max-w-[580px] max-h-[90vh] overflow-y-auto translate-y-5 transition-transform duration-300 ease-out shadow-2xl">
+    <div class="relative px-8 py-7 rounded-t-2xl" style="background:linear-gradient(135deg,#163365,#0f2450)">
+      <div class="absolute bottom-0 left-0 right-0 h-0.5" style="background:linear-gradient(90deg,#F97316,#ea6a0a)"></div>
+      <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-red-500/50 hover:rotate-90 transition-all border-none cursor-pointer text-lg bg-white/10">×</button>
+      <h2 class="text-base font-bold text-white mb-1.5">🛍️ Rejoindre Zouwor</h2>
+      <p class="text-xs text-white/80 leading-6">Remplis ce formulaire pour accéder à notre réseau d'importation et bénéficier de notre accompagnement personnalisé.</p>
+    </div>
+    <div class="px-8 py-7">
+      <form id="joinForm">
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2">Comment as-tu entendu parler de Zouwor ? <span class="text-red-500">*</span></label>
+          <div class="flex flex-col gap-2">
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'source')"><input type="radio" name="source" value="connaissance" required class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600 flex-1">Par une connaissance</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'source')"><input type="radio" name="source" value="admin" class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600 flex-1">Par un administrateur Zouwor</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'source')"><input type="radio" name="source" value="reseaux" class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600 flex-1">Sur les réseaux sociaux</label></div>
+          </div>
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2" for="motivation">Qu'est-ce qui t'a motivé à essayer Zouwor ? <span class="text-red-500">*</span></label>
+          <textarea class="w-full px-3 py-2.5 rounded-xl text-xs bg-gray-50 text-gray-900 outline-none transition-all focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10 placeholder-gray-300 resize-y min-h-[72px]" style="border:1.5px solid #dce8f5" id="motivation" name="motivation" placeholder="Décris tes motivations..." required></textarea>
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2">As-tu déjà importé des marchandises ? <span class="text-red-500">*</span></label>
+          <div class="flex gap-2">
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30 flex-1" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'import')"><input type="radio" name="import" value="oui" required class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600">Oui</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30 flex-1" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'import')"><input type="radio" name="import" value="non" class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600">Non</label></div>
+          </div>
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2">Type de produit qui t'intéresse <span class="text-red-500">*</span></label>
+          <div class="flex flex-col gap-2">
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5"><input type="checkbox" name="type" value="electronique" id="t1" class="accent-navy w-4 h-4"><label for="t1" class="cursor-pointer text-xs text-gray-600 flex-1">Électronique &amp; accessoires</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5"><input type="checkbox" name="type" value="lourd" id="t2" class="accent-navy w-4 h-4"><label for="t2" class="cursor-pointer text-xs text-gray-600 flex-1">Produit lourd (+1 kg)</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5"><input type="checkbox" name="type" value="leger" id="t3" class="accent-navy w-4 h-4"><label for="t3" class="cursor-pointer text-xs text-gray-600 flex-1">Produit léger (-1 kg)</label></div>
+          </div>
+          <input class="w-full mt-2 px-3 py-2.5 rounded-xl text-xs bg-gray-50 text-gray-900 outline-none transition-all focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10 placeholder-gray-300" style="border:1.5px solid #dce8f5" type="text" name="type_autre" placeholder="Autre type de produit...">
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2" for="produits">Que vends-tu ou souhaites-tu vendre ? <span class="text-red-500">*</span></label>
+          <textarea class="w-full px-3 py-2.5 rounded-xl text-xs bg-gray-50 text-gray-900 outline-none transition-all focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10 placeholder-gray-300 resize-y min-h-[72px]" style="border:1.5px solid #dce8f5" id="produits" name="produits" placeholder="Ex : téléphones, vêtements, accessoires cuisine..." required></textarea>
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2">Ton budget d'importation <span class="text-red-500">*</span></label>
+          <div class="flex flex-col gap-2">
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'budget')"><input type="radio" name="budget" value="50-200k" required class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600 flex-1">50 000 – 200 000 FCFA</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'budget')"><input type="radio" name="budget" value="200-500k" class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600 flex-1">200 000 – 500 000 FCFA</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'budget')"><input type="radio" name="budget" value="500k-2m" class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600 flex-1">500 000 – 2 000 000 FCFA</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'budget')"><input type="radio" name="budget" value="2m+" class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600 flex-1">Plus de 2 000 000 FCFA</label></div>
+          </div>
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2">Genre <span class="text-red-500">*</span></label>
+          <div class="flex gap-2">
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30 flex-1" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'sexe')"><input type="radio" name="sexe" value="femme" required class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600">Femme</label></div>
+            <div class="opt-item flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all bg-gray-50 hover:bg-blue-50 hover:border-navy/30 flex-1" style="border:1.5px solid #dce8f5" onclick="selOpt(this,'sexe')"><input type="radio" name="sexe" value="homme" class="accent-navy w-4 h-4"><label class="cursor-pointer text-xs text-gray-600">Homme</label></div>
+          </div>
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2" for="commune">Commune de résidence</label>
+          <input class="w-full px-3 py-2.5 rounded-xl text-xs bg-gray-50 text-gray-900 outline-none transition-all focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10 placeholder-gray-300" style="border:1.5px solid #dce8f5" type="text" id="commune" name="commune" placeholder="Ex: Yopougon, Cocody, Abobo...">
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-900 mb-2" for="wa-field">Numéro WhatsApp <span class="text-red-500">*</span></label>
+          <input class="w-full px-3 py-2.5 rounded-xl text-xs bg-gray-50 text-gray-900 outline-none transition-all focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10 placeholder-gray-300" style="border:1.5px solid #dce8f5" type="tel" id="wa-field" name="whatsapp" placeholder="+225 XX XX XX XX XX" required>
+        </div>
+        <div class="bg-blue-50 rounded-xl p-4 mb-4" style="border:1px solid #c5d6f5">
+          <h4 class="text-xs font-bold text-navy mb-1.5">🔒 Politique de confidentialité</h4>
+          <p class="text-[11px] text-gray-500 leading-6">Tes informations seront utilisées uniquement pour t'accompagner dans ton activité et t'envoyer des offres pertinentes. Nous ne partageons jamais tes données avec des tiers sans ton consentement.</p>
+        </div>
+        <div class="flex items-start gap-2.5 p-3 rounded-xl mb-4 cursor-pointer bg-gray-50 hover:bg-blue-50 hover:border-navy/30 transition-all" style="border:1.5px solid #dce8f5">
+          <input type="checkbox" id="accept" name="accept" required onchange="document.getElementById('submitBtn').disabled=!this.checked" class="accent-navy w-4 h-4 flex-shrink-0 mt-0.5">
+          <label for="accept" class="text-[11px] text-gray-500 leading-6 cursor-pointer">J'accepte que mes informations soient utilisées par Zouwor pour m'envoyer des messages relatifs à mon activité commerciale. <span class="text-red-500">*</span></label>
+        </div>
+        <button type="submit" id="submitBtn" disabled class="w-full py-3 rounded-xl font-bold text-sm text-white border-none cursor-pointer transition-all disabled:bg-gray-300 disabled:cursor-not-allowed hover:opacity-90 hover:-translate-y-0.5" style="background:linear-gradient(90deg,#163365,#F97316)">Envoyer mes réponses ✓</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── NAVBAR ──
+const navbar = document.getElementById('navbar');
+const hams = [document.getElementById('h1'),document.getElementById('h2'),document.getElementById('h3')];
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY > 60;
+  if(scrolled) {
+    navbar.style.background = 'rgba(255,255,255,.97)';
+    navbar.style.backdropFilter = 'blur(16px)';
+    navbar.style.boxShadow = '0 2px 20px rgba(22,51,101,.1)';
+    navbar.style.borderBottom = '1px solid #dce8f5';
+    navbar.classList.add('scrolled');
+    document.getElementById('logo-txt').style.color = '#0d1b2a';
+    document.getElementById('logo-txt').style.textShadow = 'none';
+    hams.forEach(h => { h.style.background = '#0d1b2a'; h.style.filter = 'none'; });
+  } else {
+    navbar.style.background = 'transparent';
+    navbar.style.backdropFilter = 'none';
+    navbar.style.boxShadow = 'none';
+    navbar.style.borderBottom = 'none';
+    navbar.classList.remove('scrolled');
+    document.getElementById('logo-txt').style.color = '#fff';
+    document.getElementById('logo-txt').style.textShadow = '0 1px 8px rgba(0,0,0,.4)';
+    hams.forEach(h => { h.style.background = 'rgba(255,255,255,.95)'; h.style.filter = 'drop-shadow(0 1px 3px rgba(0,0,0,.5))'; });
+  }
+  document.getElementById('stBtn').classList.toggle('hidden', window.scrollY <= 400);
+  document.getElementById('stBtn').classList.toggle('flex', window.scrollY > 400);
+});
+
+// ── MOBILE MENU ──
+function toggleMenu() {
+  document.getElementById('mobNav').classList.toggle('open');
+  document.getElementById('mobOverlay').classList.toggle('open');
+  document.body.style.overflow = document.getElementById('mobNav').classList.contains('open') ? 'hidden' : '';
+}
+function closeMenu() {
+  document.getElementById('mobNav').classList.remove('open');
+  document.getElementById('mobOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── HERO SLIDER ──
+const hSlides = document.querySelectorAll('.hero-slide');
+const hDotsCont = document.getElementById('heroDots');
+let hIdx = 0, hTimer;
+hSlides.forEach((_,i) => {
+  const d = document.createElement('span');
+  d.className = 'h-dot' + (i===0?' active':'');
+  d.onclick = () => goHero(i);
+  hDotsCont.appendChild(d);
+});
+function goHero(idx) {
+  hSlides[hIdx].classList.remove('active');
+  hDotsCont.children[hIdx].classList.remove('active');
+  hIdx = (idx + hSlides.length) % hSlides.length;
+  hSlides[hIdx].classList.add('active');
+  hDotsCont.children[hIdx].classList.add('active');
+}
+function heroSlide(dir) { goHero(hIdx + dir); }
+function startHeroTimer() { hTimer = setInterval(() => heroSlide(1), 5000); }
+function stopHeroTimer() { clearInterval(hTimer); }
+startHeroTimer();
+
+// ── SERVICE SLIDER (pause on hover) ──
+const svcTrack = document.getElementById('svcTrack');
+const svcCards = svcTrack.querySelectorAll('.svc-card');
+const svcDotsEl = document.getElementById('svcDots');
+let svcIdx = 0, svcTimer, svcPaused = false;
+
+function getSvcPer() { return window.innerWidth >= 1024 ? 4 : window.innerWidth >= 768 ? 2 : 1; }
+let svcPer = getSvcPer(), svcMax = Math.max(0, svcCards.length - svcPer);
+
+function buildSvcDots() {
+  svcDotsEl.innerHTML = '';
+  for(let i = 0; i <= svcMax; i++) {
+    const d = document.createElement('span');
+    d.className = 'sv-dot' + (i===svcIdx?' active':'');
+    d.onclick = () => goSvc(i);
+    svcDotsEl.appendChild(d);
+  }
+}
+function goSvc(idx) {
+  svcIdx = Math.max(0, Math.min(idx, svcMax));
+  const cw = svcCards[0].offsetWidth + 16;
+  svcTrack.style.transform = `translateX(-${svcIdx * cw}px)`;
+  svcCards.forEach((c,i) => { c.classList.toggle('sac', i === svcIdx); });
+  svcDotsEl.querySelectorAll('.sv-dot').forEach((d,i) => d.classList.toggle('active', i === svcIdx));
+}
+function svcNext() { goSvc(svcIdx >= svcMax ? 0 : svcIdx + 1); }
+function svcPrev() { goSvc(svcIdx <= 0 ? svcMax : svcIdx - 1); }
+function startSvcTimer() { svcTimer = setInterval(() => { if(!svcPaused) svcNext(); }, 3500); }
+function stopSvcTimer() { clearInterval(svcTimer); }
+
+// Pause on hover
+svcCards.forEach(card => {
+  card.addEventListener('mouseenter', () => { svcPaused = true; });
+  card.addEventListener('mouseleave', () => { svcPaused = false; });
+});
+
+buildSvcDots();
+startSvcTimer();
+window.addEventListener('resize', () => {
+  svcPer = getSvcPer();
+  svcMax = Math.max(0, svcCards.length - svcPer);
+  buildSvcDots();
+  goSvc(0);
+});
+
+// ── MODAL ──
+const modal = document.getElementById('modal');
+function openModal() {
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  requestAnimationFrame(() => { modal.style.opacity = '1'; modal.querySelector('.modal-box').style.transform = 'translateY(0)'; });
+  document.body.style.overflow = 'hidden';
+}
+
+function downloadCatalogue() {
+  const link = document.createElement('a');
+  link.href = '/files/catalogue.pdf';
+  link.download = 'catalogue.pdf';
+  link.click();
+}
+function closeModal() {
+  modal.style.opacity = '0';
+  modal.querySelector('.modal-box').style.transform = 'translateY(18px)';
+  setTimeout(() => { modal.classList.remove('flex'); modal.classList.add('hidden'); }, 280);
+  document.body.style.overflow = '';
+}
+modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+// ── OPT ITEMS (radio) ──
+function selOpt(item, name) {
+  document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+    r.closest('.opt-item').style.borderColor = '#dce8f5';
+    r.closest('.opt-item').style.background = '#f9fafb';
+  });
+  const inp = item.querySelector('input');
+  if(inp) { inp.checked = true; item.style.borderColor = '#163365'; item.style.background = '#e8f0fb'; }
+}
+// Checkboxes
+document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+  const item = cb.closest('.opt-item');
+  if(item) item.addEventListener('click', e => {
+    if(e.target.tagName !== 'INPUT') cb.checked = !cb.checked;
+    item.style.borderColor = cb.checked ? '#163365' : '#dce8f5';
+    item.style.background = cb.checked ? '#e8f0fb' : '#f9fafb';
+  });
+});
+
+// ── FORM SUBMIT ──
+// ── FORM SUBMIT ── Envoi vers l'API backend
+document.getElementById('joinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  // 1. Validation du numéro WhatsApp
+  const waInput = document.getElementById('wa-field');
+  const wa = waInput.value;
+  if(wa.replace(/\D/g,'').length < 8) { 
+    alert('Veuillez entrer un numéro WhatsApp valide.'); 
+    return; 
+  }
+  
+  // 2. Récupération de toutes les données du formulaire
+  // Source (comment il a entendu parler)
+  const sourceRadio = document.querySelector('input[name="source"]:checked');
+  const source = sourceRadio ? sourceRadio.value : '';
+  
+  // Motivation
+  const motivation = document.getElementById('motivation').value;
+  
+  // Import déjà fait ?
+  const importRadio = document.querySelector('input[name="import"]:checked');
+  const importValue = importRadio ? importRadio.value : '';
+  
+  // Types de produits (checkboxes)
+  const types = Array.from(document.querySelectorAll('input[name="type"]:checked')).map(cb => cb.value);
+  const typeAutre = document.querySelector('input[name="type_autre"]').value;
+  if(typeAutre) types.push(typeAutre);
+  
+  // Produits vendus/souhaités
+  const produits = document.getElementById('produits').value;
+  
+  // Budget
+  const budgetRadio = document.querySelector('input[name="budget"]:checked');
+  const budget = budgetRadio ? budgetRadio.value : '';
+  
+  // Sexe
+  const sexeRadio = document.querySelector('input[name="sexe"]:checked');
+  const sexe = sexeRadio ? sexeRadio.value : '';
+  
+  // Commune
+  const commune = document.getElementById('commune').value;
+  
+  // 3. Construction de l'objet à envoyer
+  const formData = {
+    source: source,
+    motivation: motivation,
+    import: importValue,
+    types: types,
+    produits: produits,
+    budget: budget,
+    sexe: sexe,
+    commune: commune,
+    whatsapp: wa,
+    date_inscription: new Date().toISOString()
+  };
+  
+  // 4. Validation des champs obligatoires
+  if(!source) { alert('Veuillez indiquer comment vous avez connu Zouwor.'); return; }
+  if(!motivation.trim()) { alert('Veuillez décrire votre motivation.'); return; }
+  if(!importValue) { alert('Veuillez indiquer si vous avez déjà importé.'); return; }
+  if(!produits.trim()) { alert('Veuillez indiquer ce que vous vendez ou souhaitez vendre.'); return; }
+  if(!budget) { alert('Veuillez sélectionner votre budget.'); return; }
+  if(!sexe) { alert('Veuillez sélectionner votre genre.'); return; }
+  
+  // 5. Envoi vers le backend
+  const submitBtn = document.getElementById('submitBtn');
+  const originalText = submitBtn.innerText;
+  submitBtn.disabled = true;
+  submitBtn.innerText = '⏳ Envoi en cours...';
+  
+  try {
+    const response = await fetch('/api/inscriptions', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const result = await response.json();
+    
+    if(response.ok && result.success) {
+      // Succès
+      alert('🎉 Merci ! Ton inscription a bien été enregistrée. Nous te contacterons bientôt sur WhatsApp.');
+      e.target.reset();
+      document.getElementById('submitBtn').disabled = true;
+      
+      // Réinitialiser le style des options
+      document.querySelectorAll('.opt-item').forEach(r => { 
+        r.style.borderColor = '#dce8f5'; 
+        r.style.background = '#f9fafb'; 
+      });
+      
+      // Décocher tous les checkboxes/radios
+      document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(input => {
+        input.checked = false;
+      });
+      
+      closeModal();
+    } else {
+      alert('❌ Une erreur est survenue. Réessaie plus tard.\n' + (result.error || ''));
+    }
+  } catch (error) {
+    console.error('Erreur réseau:', error);
+    alert('❌ Erreur de connexion au serveur. Vérifie que le serveur est lancé (node server.js)');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerText = originalText;
+  }
+});
+
+// ── Fonction helper pour styliser l'option sélectionnée ──
+function selOpt(element, name) {
+  // Retirer la classe 'selected' des autres options du même groupe
+  const parent = element.parentElement;
+  const allOpts = parent.querySelectorAll('.opt-item');
+  allOpts.forEach(opt => {
+    if(opt !== element) {
+      opt.style.borderColor = '#dce8f5';
+      opt.style.background = '#f9fafb';
+    }
+  });
+  element.style.borderColor = '#163365';
+  element.style.background = '#e8f0fb';
+  
+  // Cocher le radio button à l'intérieur
+  const radio = element.querySelector('input[type="radio"]');
+  if(radio) radio.checked = true;
+}
+
+// ── Pour les checkboxes (style visuel) ──
+document.querySelectorAll('.opt-item input[type="checkbox"]').forEach(checkbox => {
+  checkbox.addEventListener('change', function() {
+    const parent = this.closest('.opt-item');
+    if(this.checked) {
+      parent.style.borderColor = '#163365';
+      parent.style.background = '#e8f0fb';
+    } else {
+      parent.style.borderColor = '#dce8f5';
+      parent.style.background = '#f9fafb';
+    }
+  });
+});
+function handleNl(e) {
+  e.preventDefault();
+  alert('✅ Inscription réussie ! Vous recevrez nos meilleures offres prochainement.');
+  e.target.reset();
+}
+
+// ── SMOOTH SCROLL ──
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if(t) { e.preventDefault(); t.scrollIntoView({behavior:'smooth',block:'start'}); }
+  });
+});
+
+// ── REVEAL ──
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(en => { if(en.isIntersecting) { en.target.classList.add('visible'); obs.unobserve(en.target); } });
+}, {threshold: 0.1});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// À ajouter dans votre page principale
+function checkUrlForModal() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('form') === 'open') {
+        setTimeout(() => openModal(), 500);
+    }
+}
+
+// Appeler cette fonction au chargement de la page
+window.addEventListener('DOMContentLoaded', checkUrlForModal);
+</script>
+</body>
+</html>

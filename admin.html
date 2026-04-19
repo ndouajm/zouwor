@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zouwor - Administration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .modal-overlay { backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+<!-- Navbar admin -->
+<nav class="bg-[#163365] text-white px-6 py-4 flex justify-between items-center shadow-lg">
+    <div class="flex items-center gap-3">
+        <span class="text-2xl">📋</span>
+        <h1 class="text-xl font-bold">Administration Zouwor</h1>
+        <span class="bg-orange-500 text-white text-xs px-2 py-1 rounded-full ml-2" id="compteur">0 inscrits</span>
+    </div>
+    <div class="flex gap-3">
+        <button onclick="exporterCSV()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">📥 Exporter CSV</button>
+        <button onclick="rafraichir()" class="bg-[#F97316] hover:bg-orange-600 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">🔄 Rafraîchir</button>
+        <a href="/" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition">← Retour site</a>
+    </div>
+</nav>
+
+<!-- Filtres -->
+<div class="bg-white border-b px-6 py-3 flex flex-wrap gap-3 items-center">
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher (nom, WhatsApp, commune...)" class="border rounded-lg px-4 py-2 w-80 text-sm">
+    <select id="filterBudget" class="border rounded-lg px-4 py-2 text-sm">
+        <option value="">Tous les budgets</option>
+        <option value="50-200k">50k - 200k FCFA</option>
+        <option value="200-500k">200k - 500k FCFA</option>
+        <option value="500k-2m">500k - 2M FCFA</option>
+        <option value="2m+">Plus de 2M FCFA</option>
+    </select>
+    <button onclick="resetFiltres()" class="text-gray-500 hover:text-gray-700 text-sm">✖ Réinitialiser</button>
+</div>
+
+<!-- Tableau des inscriptions -->
+<div class="p-6">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                    <tr class="text-left">
+                        <th class="px-4 py-3 font-semibold text-gray-600">ID</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Date</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Source</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Motivation</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Import?</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Produits</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Budget</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Sexe</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Commune</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">WhatsApp</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Types</th>
+                        <th class="px-4 py-3 font-semibold text-gray-600">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="12" class="text-center py-8 text-gray-400">Chargement des données...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de détails -->
+<div id="detailModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div class="bg-[#163365] text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+            <h3 class="font-bold">📄 Détails de l'inscription</h3>
+            <button onclick="closeDetailModal()" class="text-white/80 hover:text-white text-2xl">×</button>
+        </div>
+        <div class="p-6" id="detailContent"></div>
+    </div>
+</div>
+
+<script>
+    let inscriptions = [];
+
+    async function chargerInscriptions() {
+        try {
+            const response = await fetch('/api/inscriptions');
+            inscriptions = await response.json();
+            afficherTableau();
+            document.getElementById('compteur').innerText = inscriptions.length + ' inscrits';
+        } catch (error) {
+            console.error('Erreur:', error);
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="12" class="text-center py-8 text-red-500">❌ Erreur de chargement. Vérifiez que le serveur est lancé.</td></tr>';
+        }
+    }
+
+    function afficherTableau() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const filterBudget = document.getElementById('filterBudget').value;
+        
+        let filtrees = inscriptions.filter(ins => {
+            const matchSearch = ins.whatsapp?.toLowerCase().includes(search) ||
+                               ins.commune?.toLowerCase().includes(search) ||
+                               ins.produits?.toLowerCase().includes(search) ||
+                               ins.motivation?.toLowerCase().includes(search);
+            const matchBudget = !filterBudget || ins.budget === filterBudget;
+            return matchSearch && matchBudget;
+        });
+        
+        if (filtrees.length === 0) {
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="12" class="text-center py-8 text-gray-400">Aucune inscription trouvée</td></tr>';
+            return;
+        }
+        
+        document.getElementById('tableBody').innerHTML = filtrees.map(ins => `
+            <tr class="border-b hover:bg-gray-50 transition">
+                <td class="px-4 py-3 text-gray-500">${ins.id}</td>
+                <td class="px-4 py-3 text-gray-500 text-xs">${new Date(ins.date).toLocaleDateString('fr')}</td>
+                <td class="px-4 py-3">${ins.source || '-'}</td>
+                <td class="px-4 py-3 max-w-xs truncate" title="${ins.motivation || ''}">${ins.motivation?.substring(0, 50) || '-'}${ins.motivation?.length > 50 ? '…' : ''}</td>
+                <td class="px-4 py-3">${ins.import === 'oui' ? '✅ Oui' : '❌ Non'}</td>
+                <td class="px-4 py-3 max-w-xs truncate" title="${ins.produits || ''}">${ins.produits?.substring(0, 40) || '-'}${ins.produits?.length > 40 ? '…' : ''}</td>
+                <td class="px-4 py-3">${formaterBudget(ins.budget)}</td>
+                <td class="px-4 py-3">${ins.sexe === 'femme' ? '👩 Femme' : '👨 Homme'}</td>
+                <td class="px-4 py-3">${ins.commune || '-'}</td>
+                <td class="px-4 py-3"><a href="https://wa.me/${ins.whatsapp?.replace(/[^0-9]/g, '')}" target="_blank" class="text-green-600 hover:underline">${ins.whatsapp}</a></td>
+                <td class="px-4 py-3">${(ins.types || []).join(', ') || '-'}</td>
+                <td class="px-4 py-3">
+                    <button onclick="voirDetails(${ins.id})" class="text-blue-600 hover:text-blue-800 mr-2 text-xs">👁 Voir</button>
+                    <button onclick="supprimer(${ins.id})" class="text-red-500 hover:text-red-700 text-xs">🗑 Suppr</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    function formaterBudget(budget) {
+        const budgets = {
+            '50-200k': '50k - 200k FCFA',
+            '200-500k': '200k - 500k FCFA',
+            '500k-2m': '500k - 2M FCFA',
+            '2m+': 'Plus de 2M FCFA'
+        };
+        return budgets[budget] || budget;
+    }
+    
+    async function voirDetails(id) {
+        const ins = inscriptions.find(i => i.id === id);
+        if (!ins) return;
+        
+        document.getElementById('detailContent').innerHTML = `
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div><span class="text-gray-400 text-xs">ID</span><br><strong>${ins.id}</strong></div>
+                    <div><span class="text-gray-400 text-xs">Date</span><br><strong>${new Date(ins.date).toLocaleString('fr')}</strong></div>
+                    <div><span class="text-gray-400 text-xs">Source</span><br><strong>${ins.source || '-'}</strong></div>
+                    <div><span class="text-gray-400 text-xs">WhatsApp</span><br><a href="https://wa.me/${ins.whatsapp?.replace(/[^0-9]/g, '')}" target="_blank" class="text-green-600">${ins.whatsapp}</a></div>
+                </div>
+                <div><span class="text-gray-400 text-xs">Motivation</span><br><p class="bg-gray-50 p-2 rounded">${ins.motivation || '-'}</p></div>
+                <div><span class="text-gray-400 text-xs">Produits souhaités</span><br><p class="bg-gray-50 p-2 rounded">${ins.produits || '-'}</p></div>
+                <div><span class="text-gray-400 text-xs">Budget</span><br><strong>${formaterBudget(ins.budget)}</strong></div>
+                <div><span class="text-gray-400 text-xs">Commune</span><br>${ins.commune || '-'}</div>
+                <div><span class="text-gray-400 text-xs">Types de produits</span><br>${(ins.types || []).join(', ') || '-'}</div>
+            </div>
+        `;
+        document.getElementById('detailModal').classList.remove('hidden');
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+    
+    function closeDetailModal() {
+        document.getElementById('detailModal').classList.add('hidden');
+        document.getElementById('detailModal').style.display = 'none';
+    }
+    
+    async function supprimer(id) {
+        if (confirm('Supprimer cette inscription ?')) {
+            await fetch(`/api/inscriptions/${id}`, { method: 'DELETE' });
+            chargerInscriptions();
+        }
+    }
+    
+    async function exporterCSV() {
+        window.location.href = '/api/export/csv';
+    }
+    
+    function rafraichir() { chargerInscriptions(); }
+    function resetFiltres() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterBudget').value = '';
+        afficherTableau();
+    }
+    
+    document.getElementById('searchInput').addEventListener('input', afficherTableau);
+    document.getElementById('filterBudget').addEventListener('change', afficherTableau);
+    
+    chargerInscriptions();
+</script>
+</body>
+</html>

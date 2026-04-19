@@ -1,0 +1,76 @@
+# Dépendances
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Base de données (fichiers JSON contenant les données utilisateurs)
+inscriptions.json
+*.json
+!package.json
+!package-lock.json
+
+# Fichiers d'environnement
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# OS générés
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+*.db
+
+# Fichiers de build / distribution
+dist/
+build/
+out/
+
+# Fichiers sensibles
+*.key
+*.pem
+*.cert
+*.crt
+secrets/
+credentials/
+
+# Backup de données
+*.backup.json
+*.old.json
+data-backup/
+
+# Fichiers spécifiques au projet Zouwor
+data/
+backups/
+exports/
+*.csv
+!package.json
